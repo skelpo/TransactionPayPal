@@ -7,9 +7,11 @@ let package = Package(
     products: [
         .library(name: "TransactionPayPal", targets: ["TransactionPayPal"]),
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/skelpo/Transaction.git", from: "0.1.3")
+    ],
     targets: [
-        .target(name: "TransactionPayPal", dependencies: []),
+        .target(name: "TransactionPayPal", dependencies: ["Transaction"]),
         .testTarget(name: "TransactionPayPalTests", dependencies: ["TransactionPayPal"]),
     ]
 )
