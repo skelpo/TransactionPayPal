@@ -1,37 +1,75 @@
 @_exported import Transaction
+import PayPal
 import Service
 
-public final class PayPalPayment<P>: PaymentMethod where P: Buyable {
-    public typealias Purchase = P
+public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
+    where Prc: PaymentRepresentable & PaymentCreator, Prc.Payment == Pay, Pay: ExecutablePayment
+{
     
-    public static var pendingPossible: Bool { return true }
-    public static var preauthNeeded: Bool { return true }
-    public static var name: String { return "PayPal Payment" }
-    public static var slug: String { return "paypalPayment" }
+    // MARK: - Types
+    public typealias Purchase = Prc
+    public typealias Payment = Pay
+    public typealias ExecutionData = AcceptQueryString
+    public typealias ExecutionResponse = PayPal.Payment
+    
+    
+    // MARK: - Properties
+    public static var name: String {
+        return "PayPal Payment"
+    }
+    public static var slug: String {
+        return "paypal"
+    }
     
     public let container: Container
     
+    
+    // MARK: - Methods
     public init(container: Container) {
         self.container = container
     }
     
-    public static func makeService(for worker: Container) throws -> PayPalPayment<P> {
-        return PayPalPayment<P>.init(container: worker)
+    public func payment(for purchase: Prc) -> EventLoopFuture<Pay> {
+        return Future.flatMap(on: self.container) { () -> Future<PayPal.Payment> in
+            let payments = try self.container.make(Payments.self)
+            return payments.create(payment: purchase.paypal)
+        }.flatMap { payment in
+            return purchase.payment(on: self.container, with: self)
+        }
     }
     
-    public func workThroughPendingTransactions() {
-        fatalError()
+    public func execute(payment: Pay, with data: AcceptQueryString) -> EventLoopFuture<PayPal.Payment> {
+        return Future.flatMap(on: self.container) {
+            let payments = try self.container.make(Payments.self)
+            let executor = try PayPal.Payment.Executor(payer: data.payerID, amounts: [
+                DetailedAmount(currency: payment.currency, total: payment.total, details: nil)
+            ])
+            
+            return payments.execute(payment: data.paymentID, with: executor)
+        }
     }
     
-    public func createTransaction(from purchase: P, userId: Int, amount: Int?, status: P.PaymentStatus?, paymentInit: @escaping (P.ID, String, Int, Int) -> (P.Payment)) -> EventLoopFuture<P.Payment> {
-        fatalError()
-    }
-    
-    public func pay(for order: P, userId: Int, amount: Int, params: Codable?, paymentInit: @escaping (P.ID, String, Int, Int) -> (P.Payment)) throws -> EventLoopFuture<PaymentResponse<P>> {
-        fatalError()
-    }
-    
-    public func refund(payment: P.Payment, amount: Int?) -> EventLoopFuture<P.Payment> {
-        fatalError()
+    public func refund(payment: Pay, amount: Int?) -> EventLoopFuture<Pay> {
+        let payments: Payments
+        
+        do {
+            payments = try self.container.make(Payments.self)
+        } catch let error {
+            return self.container.future(error: error)
+        }
+            
+        return payments.get(payment: payment.externalID).flatMap { external in
+            guard let id = external.id else {
+                throw PayPalError(status: .failedDependency, identifier: "noID", reason: "Cannot get ID for a PayPal payment")
+            }
+            let refund = try PayPal.Payment.Refund(
+                amount: DetailedAmount(currency: payment.currency, total: payment.total, details: nil),
+                description: nil,
+                reason: nil,
+                invoice: nil
+            )
+            
+            return payments.refund(sale: id, with: refund).transform(to: payment)
+        }
     }
 }
