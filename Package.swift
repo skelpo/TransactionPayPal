@@ -9,7 +9,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/skelpo/PayPal.git", from: "0.1.0"),
-        .package(url: "https://github.com/skelpo/Transaction.git", from: "0.1.3")
+        .package(url: "https://github.com/skelpo/Transaction.git", from: "0.3.0")
     ],
     targets: [
         .target(name: "TransactionPayPal", dependencies: ["Transaction", "PayPal"]),
