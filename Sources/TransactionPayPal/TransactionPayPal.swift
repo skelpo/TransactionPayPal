@@ -10,7 +10,6 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
     public typealias Purchase = Prc
     public typealias Payment = Pay
     public typealias ExecutionData = AcceptQueryString
-    public typealias ExecutionResponse = PayPal.Payment
     
     
     // MARK: - Properties
@@ -38,14 +37,14 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
         }
     }
     
-    public func execute(payment: Pay, with data: AcceptQueryString) -> EventLoopFuture<PayPal.Payment> {
+    public func execute(payment: Pay, with data: AcceptQueryString) -> EventLoopFuture<Pay> {
         return Future.flatMap(on: self.container) {
             let payments = try self.container.make(Payments.self)
             let executor = try PayPal.Payment.Executor(payer: data.payerID, amounts: [
                 DetailedAmount(currency: payment.currency, total: payment.total, details: nil)
             ])
             
-            return payments.execute(payment: data.paymentID, with: executor)
+            return payments.execute(payment: data.paymentID, with: executor).transform(to: payment)
         }
     }
     
