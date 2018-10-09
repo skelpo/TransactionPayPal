@@ -1,4 +1,5 @@
 @_exported import Transaction
+import Vapor
 import PayPal
 import Service
 
@@ -23,11 +24,13 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
     public let container: Container
     
     
-    // MARK: - Methods
+    // MARK: - Init
     public init(container: Container) {
         self.container = container
     }
     
+    
+    // MARK: - PaymentMethod
     public func payment(for purchase: Prc) -> EventLoopFuture<Pay> {
         return Future.flatMap(on: self.container) { () -> Future<PayPal.Payment> in
             let payments = try self.container.make(Payments.self)
@@ -69,6 +72,38 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
             )
             
             return payments.refund(sale: id, with: refund).transform(to: payment)
+        }
+    }
+}
+
+
+// MARK: - PaymentResponse
+extension PayPalPayment: PaymentResponse where Pay: Content {
+    public typealias CreatedResponse = Response
+    public typealias ExecutedResponse = Response
+    
+    public func created(from payment: Pay) -> Future<Response> {
+        return Future.flatMap(on: self.container) { () -> Future<PayPal.Payment> in
+            let payments = try self.container.make(Payments.self)
+            return payments.get(payment: payment.externalID)
+        }.map { payment -> Response in
+            guard let redirect = payment.links?.filter({ $0.rel == "approval_url" }).first?.href else {
+                throw Abort(.failedDependency, reason: "Cannot get payment approval URL")
+            }
+            
+            let response = Response(using: self.container)
+            response.http.status = .seeOther
+            response.http.headers.replaceOrAdd(name: .location, value: redirect)
+            
+            return response
+        }
+    }
+    
+    public func executed(from payment: Pay) -> Future<Response> {
+        return Future.map(on: self.container) {
+            let response = Response(using: self.container)
+            try response.content.encode(payment)
+            return response
         }
     }
 }
