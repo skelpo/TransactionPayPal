@@ -4,7 +4,7 @@ import PayPal
 import Service
 
 public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
-    where Prc: PaymentRepresentable & PaymentCreator, Prc.Payment == Pay, Pay: ExecutablePayment
+    where Prc: PaymentRepresentable, Prc.Payment == Pay, Pay: ExecutablePayment
 {
     
     // MARK: - Types
@@ -34,7 +34,13 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
     public func payment(for purchase: Prc) -> EventLoopFuture<Pay> {
         return Future.flatMap(on: self.container) { () -> Future<PayPal.Payment> in
             let payments = try self.container.make(Payments.self)
-            return payments.create(payment: purchase.paypal)
+            
+            guard let request = self.container as? Request else {
+                throw Abort(.internalServerError, reason: "Attempted to decode a PayPal type payment from a non-request container")
+            }
+            
+            let payment: Future<(PayPal.Payment, String?)> = try request.content.decode(PayPal.Payment.self).and(result: nil)
+            return payment.flatMap(payments.create)
         }.flatMap { payment in
             return purchase.payment(on: self.container, with: self)
         }

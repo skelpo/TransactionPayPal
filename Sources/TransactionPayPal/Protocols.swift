@@ -6,7 +6,3 @@ public protocol ExecutablePayment {
     var currency: Currency { get }
     var externalID: String? { get }
 }
-
-public protocol PaymentCreator {
-    var paypal: PayPal.Payment { get }
-}
