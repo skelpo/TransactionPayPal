@@ -59,8 +59,14 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
         } catch let error {
             return self.container.future(error: error)
         }
-            
-        return payments.get(payment: payment.externalID).flatMap { external in
+    
+        guard let external = payment.externalID else {
+            return self.container.future(error:
+                Abort(.custom(code: 418, reasonPhrase: "I'm a Teapot"), reason: "Unable to get ID for PayPal payment to refund")
+            )
+        }
+        
+        return payments.get(payment: external).flatMap { external in
             guard let id = external.id else {
                 throw PayPalError(status: .failedDependency, identifier: "noID", reason: "Cannot get ID for a PayPal payment")
             }
@@ -85,7 +91,11 @@ extension PayPalPayment: PaymentResponse where Pay: Content {
     public func created(from payment: Pay) -> Future<Response> {
         return Future.flatMap(on: self.container) { () -> Future<PayPal.Payment> in
             let payments = try self.container.make(Payments.self)
-            return payments.get(payment: payment.externalID)
+            guard let external = payment.externalID else {
+                throw Abort(.custom(code: 418, reasonPhrase: "I'm a Teapot"), reason: "Unable to get ID for Stripe payment to refund")
+            }
+            
+            return payments.get(payment: external)
         }.map { payment -> Response in
             guard let redirect = payment.links?.filter({ $0.rel == "approval_url" }).first?.href else {
                 throw Abort(.failedDependency, reason: "Cannot get payment approval URL")
