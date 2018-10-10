@@ -42,7 +42,7 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
             let payment: Future<(PayPal.Payment, String?)> = try request.content.decode(PayPal.Payment.self).and(result: nil)
             return payment.flatMap(payments.create)
         }.flatMap { payment in
-            return purchase.payment(on: self.container, with: self)
+            return purchase.payment(on: self.container, with: self, externalID: payment)
         }
     }
     
@@ -123,3 +123,5 @@ extension PayPalPayment: PaymentResponse where Pay: Content {
         }
     }
 }
+
+extension PayPal.Payment: Identifiable {}
