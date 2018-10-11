@@ -50,7 +50,7 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
         return Future.flatMap(on: self.container) {
             let payments = try self.container.make(Payments.self)
             let executor = try PayPal.Payment.Executor(payer: data.payerID, amounts: [
-                DetailedAmount(currency: (payment.currency as? Currency) ?? .usd, total: payment.total, details: nil)
+                DetailedAmount(currency: (payment.currency.wrapped as? Currency) ?? .usd, total: payment.total, details: nil)
             ])
             
             return payments.execute(payment: data.paymentID, with: executor).transform(to: payment)
@@ -77,7 +77,7 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
                 throw PayPalError(status: .failedDependency, identifier: "noID", reason: "Cannot get ID for a PayPal payment")
             }
             let refund = try PayPal.Payment.Refund(
-                amount: DetailedAmount(currency: (payment.currency as? Currency) ?? .usd, total: payment.total, details: nil),
+                amount: DetailedAmount(currency: (payment.currency.wrapped as? Currency) ?? .usd, total: payment.total, details: nil),
                 description: nil,
                 reason: nil,
                 invoice: nil
