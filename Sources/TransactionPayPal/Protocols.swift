@@ -3,7 +3,7 @@ import Foundation
 import PayPal
 
 public protocol ExecutablePayment {
-    var total: String { get }
+    var total: Int { get }
     var currency: String { get }
     var externalID: String? { get }
 }
