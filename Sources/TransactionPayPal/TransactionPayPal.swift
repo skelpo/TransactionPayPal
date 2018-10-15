@@ -50,7 +50,7 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
         return Future.flatMap(on: self.container) {
             let payments = try self.container.make(Payments.self)
             let executor = try PayPal.Payment.Executor(payer: data.payerID, amounts: [
-                DetailedAmount(currency: (payment.currency.wrapped as? Currency) ?? .usd, total: payment.total, details: nil)
+                DetailedAmount(currency: Currency(rawValue: payment.currency) ?? .usd, total: payment.total, details: nil)
             ])
             
             return payments.execute(payment: data.paymentID, with: executor).transform(to: payment)

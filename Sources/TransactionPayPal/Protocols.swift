@@ -4,7 +4,7 @@ import PayPal
 
 public protocol ExecutablePayment {
     var total: String { get }
-    var currency: CurrencyType { get }
+    var currency: String { get }
     var externalID: String? { get }
 }
 
