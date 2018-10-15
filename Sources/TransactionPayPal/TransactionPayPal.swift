@@ -3,7 +3,7 @@ import Vapor
 import PayPal
 import Service
 
-public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
+public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod, AmountConverter
     where Prc: PaymentRepresentable, Prc.Payment == Pay, Pay: ExecutablePayment
 {
     
@@ -49,8 +49,10 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
     public func execute(payment: Pay, with data: AcceptQueryString) -> EventLoopFuture<Pay> {
         return Future.flatMap(on: self.container) {
             let payments = try self.container.make(Payments.self)
+            
+            let currency = Currency(rawValue: payment.currency) ?? .usd
             let executor = try PayPal.Payment.Executor(payer: data.payerID, amounts: [
-                DetailedAmount(currency: Currency(rawValue: payment.currency) ?? .usd, total: payment.total, details: nil)
+                DetailedAmount(currency: currency, total: self.amount(for: payment.total, as: currency), details: nil)
             ])
             
             return payments.execute(payment: data.paymentID, with: executor).transform(to: payment)
@@ -76,8 +78,9 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
             guard let id = external.id else {
                 throw PayPalError(status: .failedDependency, identifier: "noID", reason: "Cannot get ID for a PayPal payment")
             }
+            let currency = Currency(rawValue: payment.currency) ?? .usd
             let refund = try PayPal.Payment.Refund(
-                amount: DetailedAmount(currency: Currency(rawValue: payment.currency) ?? .usd, total: payment.total, details: nil),
+                amount: DetailedAmount(currency: currency, total: self.amount(for: payment.total, as: currency), details: nil),
                 description: nil,
                 reason: nil,
                 invoice: nil
@@ -85,6 +88,22 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
             
             return payments.refund(sale: id, with: refund).transform(to: payment)
         }
+    }
+    
+    public func amount(for amount: Int, as currency: Currency) -> String {
+        let exponent = currency.e ?? 0
+        
+        var string = String(describing: amount)
+        
+        if exponent == 0 {
+            return string
+        }
+        if string.count > exponent {
+            string.insert(".", at: string.index(string.endIndex, offsetBy: -exponent))
+        } else {
+            return "0." + String(repeating: "0", count: exponent - string.count) + string
+        }
+        return string
     }
 }
 
