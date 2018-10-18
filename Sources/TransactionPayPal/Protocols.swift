@@ -23,3 +23,24 @@ extension Currency: CurrencyProtocol {
     }
 }
 
+extension Currency: AmountConverter {
+    public func amount(for amount: Int, as currency: Currency) -> String {
+        let exponent = currency.e ?? 0
+        
+        var string = String(describing: amount)
+        
+        if exponent == 0 {
+            return string
+        }
+        if string.count > exponent {
+            string.insert(".", at: string.index(string.endIndex, offsetBy: -exponent))
+        } else {
+            return "0." + String(repeating: "0", count: exponent - string.count) + string
+        }
+        return string
+    }
+    
+    public func amount(for amount: Int) -> String {
+        return self.amount(for: amount, as: self)
+    }
+}

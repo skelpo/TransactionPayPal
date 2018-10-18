@@ -3,7 +3,7 @@ import Vapor
 import PayPal
 import Service
 
-public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod, AmountConverter
+public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
     where Prc: PaymentRepresentable, Prc.Payment == Pay, Pay: ExecutablePayment & PayPalPaymentRepresentable
 {
     
@@ -52,7 +52,7 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod, AmountConv
             
             let currency = Currency(rawValue: payment.currency) ?? .usd
             let executor = try PayPal.Payment.Executor(payer: data.payerID, amounts: [
-                DetailedAmount(currency: currency, total: self.amount(for: payment.total, as: currency), details: nil)
+                DetailedAmount(currency: currency, total: currency.amount(for: payment.total), details: nil)
             ])
             
             return payments.execute(payment: data.paymentID, with: executor).transform(to: payment)
@@ -80,7 +80,7 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod, AmountConv
             }
             let currency = Currency(rawValue: payment.currency) ?? .usd
             let refund = try PayPal.Payment.Refund(
-                amount: DetailedAmount(currency: currency, total: self.amount(for: payment.total, as: currency), details: nil),
+                amount: DetailedAmount(currency: currency, total: currency.amount(for: payment.total), details: nil),
                 description: nil,
                 reason: nil,
                 invoice: nil
@@ -88,22 +88,6 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod, AmountConv
             
             return payments.refund(sale: id, with: refund).transform(to: payment)
         }
-    }
-    
-    public func amount(for amount: Int, as currency: Currency) -> String {
-        let exponent = currency.e ?? 0
-        
-        var string = String(describing: amount)
-        
-        if exponent == 0 {
-            return string
-        }
-        if string.count > exponent {
-            string.insert(".", at: string.index(string.endIndex, offsetBy: -exponent))
-        } else {
-            return "0." + String(repeating: "0", count: exponent - string.count) + string
-        }
-        return string
     }
 }
 
