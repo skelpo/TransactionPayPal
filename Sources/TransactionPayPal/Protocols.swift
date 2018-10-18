@@ -1,6 +1,6 @@
+import DatabaseKit
 import Transaction
 import Foundation
-import Service
 import PayPal
 
 public protocol ExecutablePayment {
@@ -10,7 +10,7 @@ public protocol ExecutablePayment {
 }
 
 public protocol PayPalPaymentRepresentable {
-    func paypal(on container: Container) -> PayPal.Payment
+    func paypal(on conn: DatabaseConnectable) -> Future<PayPal.Payment>
 }
 
 extension Currency: CurrencyProtocol {
