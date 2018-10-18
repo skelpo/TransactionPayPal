@@ -4,7 +4,7 @@ import PayPal
 import Service
 
 public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod, AmountConverter
-    where Prc: PaymentRepresentable, Prc.Payment == Pay, Pay: ExecutablePayment
+    where Prc: PaymentRepresentable, Prc.Payment == Pay, Pay: ExecutablePayment & PayPalPaymentRepresentable
 {
     
     // MARK: - Types
