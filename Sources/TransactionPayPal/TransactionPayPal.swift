@@ -31,7 +31,7 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod, AmountConv
     
     
     // MARK: - PaymentMethod
-    public func payment(for purchase: Prc) -> EventLoopFuture<Pay> {
+    public func payment(for purchase: Prc, with content: Prc.PaymentContent) -> EventLoopFuture<Pay> {
         return Future.flatMap(on: self.container) { () -> Future<PayPal.Payment> in
             let payments = try self.container.make(Payments.self)
             
@@ -42,7 +42,7 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod, AmountConv
             let payment: Future<(PayPal.Payment, String?)> = try request.content.decode(PayPal.Payment.self).and(result: nil)
             return payment.flatMap(payments.create)
         }.flatMap { payment in
-            return purchase.payment(on: self.container, with: self, externalID: payment.id)
+            return purchase.payment(on: self.container, with: self, content: content, externalID: payment.id)
         }
     }
     
