@@ -6,11 +6,13 @@ import PayPal
 public protocol ExecutablePayment {
     var total: Int { get }
     var currency: String { get }
-    var externalID: String? { get }
+    var externalID: String? { get set }
 }
 
 public protocol PayPalPaymentRepresentable {
-    func paypal(on conn: DatabaseConnectable) -> Future<PayPal.Payment>
+    associatedtype Content
+    
+    func paypal(on container: Container, content: Content) -> Future<PayPal.Payment>
 }
 
 extension Currency: CurrencyProtocol {
