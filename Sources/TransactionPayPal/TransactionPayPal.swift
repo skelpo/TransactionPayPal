@@ -101,13 +101,12 @@ extension PayPalPayment: PaymentResponse where Pay: Content {
             
             return payments.get(payment: external)
         }.map { payment -> Response in
-            guard let redirect = payment.links?.filter({ $0.rel == "approval_url" }).first?.href else {
+            guard let redirect = payment.links?.filter({ $0.rel == "approval_url" }).first else {
                 throw Abort(.failedDependency, reason: "Cannot get payment approval URL")
             }
             
             let response = Response(using: self.container)
-            response.http.status = .seeOther
-            response.http.headers.replaceOrAdd(name: .location, value: redirect)
+            try response.content.encode(redirect)
             
             return response
         }
