@@ -89,10 +89,10 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
 
 // MARK: - PaymentResponse
 extension PayPalPayment: PaymentResponse where Pay: Content {
-    public typealias CreatedResponse = Response
-    public typealias ExecutedResponse = Response
+    public typealias CreatedResponse = LinkDescription
+    public typealias ExecutedResponse = Pay
     
-    public func created(from payment: Pay) -> Future<Response> {
+    public func created(from payment: Pay) -> Future<LinkDescription> {
         return Future.flatMap(on: self.container) { () -> Future<PayPal.Payment> in
             let payments = try self.container.make(Payments.self)
             guard let external = payment.externalID else {
@@ -100,23 +100,15 @@ extension PayPalPayment: PaymentResponse where Pay: Content {
             }
             
             return payments.get(payment: external)
-        }.map { payment -> Response in
+        }.map { payment in
             guard let redirect = payment.links?.filter({ $0.rel == "approval_url" }).first else {
                 throw Abort(.failedDependency, reason: "Cannot get payment approval URL")
             }
-            
-            let response = Response(using: self.container)
-            try response.content.encode(redirect)
-            
-            return response
+            return redirect
         }
     }
     
-    public func executed(from payment: Pay) -> Future<Response> {
-        return Future.map(on: self.container) {
-            let response = Response(using: self.container)
-            try response.content.encode(payment)
-            return response
-        }
+    public func executed(from payment: Pay) -> Future<Pay> {
+        return self.container.future(payment)
     }
 }
