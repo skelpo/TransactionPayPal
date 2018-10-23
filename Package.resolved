@@ -158,9 +158,9 @@
         "package": "Transaction",
         "repositoryURL": "https://github.com/skelpo/Transaction.git",
         "state": {
-          "branch": "develop",
-          "revision": "c8ce27e8b3b70cb5e1928524477df1d4ca0fb57f",
-          "version": null
+          "branch": null,
+          "revision": "ad0d3f69c76aec75372fa472576ea46a01524b2e",
+          "version": "0.5.0"
         }
       },
       {
@@ -195,8 +195,8 @@
         "repositoryURL": "https://github.com/vapor/websocket.git",
         "state": {
           "branch": null,
-          "revision": "149af03348f60ac8b84defdf277112d62fd8c704",
-          "version": "1.0.2"
+          "revision": "eb4277f75f1d96a3d15c852cdd89af1799093dcd",
+          "version": "1.1.0"
         }
       }
     ]
