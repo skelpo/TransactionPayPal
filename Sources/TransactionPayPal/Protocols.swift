@@ -61,20 +61,11 @@ extension Currency: AmountConverter {
     ///   - currency: The currency of the amount passed in.
     ///
     /// - Returns: The formatted amount.
-    public func amount(for amount: Int, as currency: Currency) -> String {
+    public func amount(for amount: Int, as currency: Currency) -> Decimal {
         let exponent = currency.e ?? 0
+        let sign: FloatingPointSign = amount >= 0 ? .plus : .minus
         
-        var string = String(describing: amount)
-        
-        if exponent == 0 {
-            return string
-        }
-        if string.count > exponent {
-            string.insert(".", at: string.index(string.endIndex, offsetBy: -exponent))
-        } else {
-            return "0." + String(repeating: "0", count: exponent - string.count) + string
-        }
-        return string
+        return Decimal(sign: sign, exponent: -exponent, significand: Decimal(amount))
     }
     
     /// Converts the amount of a transaction for a given currency to a format consumable by the third-party payment provider.
@@ -82,7 +73,7 @@ extension Currency: AmountConverter {
     /// - Parameter amount: The amount for a transaction to convert.
     ///
     /// - Returns: The formatted amount.
-    public func amount(for amount: Int) -> String {
+    public func amount(for amount: Int) -> Decimal {
         return self.amount(for: amount, as: self)
     }
 }

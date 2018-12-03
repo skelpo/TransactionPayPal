@@ -46,7 +46,7 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
             let payments = try self.container.make(Payments.self)
             
             let currency = Currency(rawValue: payment.currency) ?? .usd
-            let executor = try PayPal.Payment.Executor(payer: data.payerID, amounts: [
+            let executor = PayPal.Payment.Executor(payer: data.payerID, amounts: [
                 DetailedAmount(currency: currency, total: currency.amount(for: payment.total), details: nil)
             ])
             
