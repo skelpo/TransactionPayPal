@@ -74,7 +74,7 @@ public final class PayPalPayment<Prc, Pay>: TransactionPaymentMethod
                 throw PayPalError(status: .failedDependency, identifier: "noID", reason: "Cannot get ID for a PayPal payment")
             }
             let currency = Currency(rawValue: payment.currency) ?? .usd
-            let refund = try PayPal.Payment.Refund(
+            let refund = PayPal.Payment.Refund(
                 amount: DetailedAmount(currency: currency, total: currency.amount(for: payment.total), details: nil),
                 description: nil,
                 reason: nil,
